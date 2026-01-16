@@ -7,22 +7,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary-color: #2c3e50; --secondary-color: #27ae60; }
-        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; direction: ltr; }
+        body { font-family: 'Arial', sans-serif; background: #f4f4f4; padding: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
         .form-section { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
         .input-group { margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         .item-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         button { cursor: pointer; border: none; border-radius: 4px; padding: 10px; font-weight: bold; }
         .add-btn { background: var(--secondary-color); color: white; }
         .gen-btn { background: var(--primary-color); color: white; width: 100%; font-size: 18px; margin-top: 20px; }
         
-        /* Invoice Design */
-        #invoice-preview { display: none; margin-top: 30px; border: 1px solid #ddd; padding: 40px; background: #fff; }
-        .invoice-header { display: flex; justify-content: space-between; align-items: center; }
-        .logo-preview { max-width: 150px; max-height: 100px; object-fit: contain; }
+        /* Invoice Design for PDF */
+        #invoice-preview { display: none; margin-top: 30px; border: 1px solid #ddd; padding: 20px; background: #fff; }
+        #print-area { padding: 20px; background: white; color: black !important; }
+        .invoice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .logo-preview { max-width: 120px; height: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        table th, table td { border: 1px solid #eee; padding: 12px; text-align: left; }
+        table th, table td { border: 1px solid #eee; padding: 12px; text-align: left; color: black; }
         .totals { text-align: right; margin-top: 20px; }
     </style>
 </head>
@@ -34,35 +35,34 @@
     <div class="form-section">
         <div class="input-group">
             <div>
-                <label>Business Logo</label>
+                <label>Upload Logo</label>
                 <input type="file" id="logoInput" accept="image/*" onchange="previewImage(event)">
             </div>
             <div>
                 <label>Business Name</label>
-                <input type="text" id="bizName" placeholder="Your Business Name">
+                <input type="text" id="bizName" placeholder="Mian Chicken Shop">
             </div>
         </div>
         <div class="input-group">
-            <input type="text" id="clientName" placeholder="Client Name">
-            <input type="text" id="invoiceNumber" placeholder="Invoice # (e.g. 001)">
+            <input type="text" id="clientName" placeholder="Customer Name">
+            <input type="text" id="invoiceNumber" placeholder="Bill No.">
         </div>
     </div>
 
     <div id="items-container">
-        <label>Items</label>
         <div class="item-row">
-            <input type="text" placeholder="Description" class="item-desc">
+            <input type="text" placeholder="Item Name" class="item-desc">
             <input type="number" placeholder="Qty" class="item-qty">
             <input type="number" placeholder="Price" class="item-price">
         </div>
     </div>
-    <button class="add-btn" onclick="addItem()">+ Add More Item</button>
+    <button class="add-btn" onclick="addItem()">+ Add More</button>
 
     <div class="input-group" style="margin-top:20px;">
         <input type="number" id="taxRate" placeholder="Tax % (Optional)">
     </div>
 
-    <button class="gen-btn" onclick="generateInvoice()">Generate & Preview</button>
+    <button class="gen-btn" onclick="generateInvoice()">Generate Bill</button>
 </div>
 
 <div id="invoice-preview">
@@ -70,9 +70,9 @@
         <div class="invoice-header">
             <div id="logoContainer"></div>
             <div style="text-align:right;">
-                <h1 id="outBizName"></h1>
-                <p>Date: <span id="outDate"></span></p>
-                <p>Invoice #: <span id="outInvNum"></span></p>
+                <h2 id="outBizName" style="margin:0;"></h2>
+                <p style="margin:5px 0;">Date: <span id="outDate"></span></p>
+                <p style="margin:5px 0;">Bill #: <span id="outInvNum"></span></p>
             </div>
         </div>
         <hr>
@@ -91,36 +91,38 @@
         </table>
 
         <div class="totals">
-            <p>Subtotal: <span id="outSubtotal"></span></p>
-            <p>Tax: <span id="outTax"></span></p>
-            <h3>Grand Total: <span id="outGrandTotal"></span></h3>
+            <p>Subtotal: <span id="outSubtotal"></span> PKR</p>
+            <p>Tax: <span id="outTax"></span> PKR</p>
+            <hr align="right" width="200">
+            <h3>Grand Total: <span id="outGrandTotal"></span> PKR</h3>
         </div>
     </div>
-    <button class="gen-btn" style="background:#e67e22;" onclick="downloadPDF()">Download PDF</button>
+    <button class="gen-btn" style="background:#e67e22;" onclick="downloadPDF()">Download PDF Now</button>
 </div>
 
 <script>
     let logoData = "";
 
     function previewImage(event) {
+        const file = event.target.files[0];
         const reader = new FileReader();
         reader.onload = function() { logoData = reader.result; }
-        reader.readAsDataURL(event.target.files[0]);
+        reader.readAsDataURL(file);
     }
 
     function addItem() {
         const div = document.createElement('div');
         div.className = 'item-row';
-        div.innerHTML = `<input type="text" placeholder="Description" class="item-desc">
+        div.innerHTML = `<input type="text" placeholder="Item Name" class="item-desc">
                          <input type="number" placeholder="Qty" class="item-qty">
                          <input type="number" placeholder="Price" class="item-price">`;
         document.getElementById('items-container').appendChild(div);
     }
 
     function generateInvoice() {
-        document.getElementById('outBizName').innerText = document.getElementById('bizName').value;
-        document.getElementById('outClient').innerText = document.getElementById('clientName').value;
-        document.getElementById('outInvNum').innerText = document.getElementById('invoiceNumber').value;
+        document.getElementById('outBizName').innerText = document.getElementById('bizName').value || "Mian Chicken Shop";
+        document.getElementById('outClient').innerText = document.getElementById('clientName').value || "Customer";
+        document.getElementById('outInvNum').innerText = document.getElementById('invoiceNumber').value || "001";
         document.getElementById('outDate').innerText = new Date().toLocaleDateString();
 
         const logoCont = document.getElementById('logoContainer');
@@ -133,12 +135,14 @@
         let html = "";
 
         for(let i=0; i<descs.length; i++) {
-            let lineTotal = qtys[i].value * prices[i].value;
+            let q = parseFloat(qtys[i].value) || 0;
+            let p = parseFloat(prices[i].value) || 0;
+            let lineTotal = q * p;
             subtotal += lineTotal;
-            html += `<tr><td>${descs[i].value}</td><td>${qtys[i].value}</td><td>${prices[i].value}</td><td>${lineTotal.toFixed(2)}</td></tr>`;
+            html += `<tr><td>${descs[i].value}</td><td>${q}</td><td>${p}</td><td>${lineTotal.toFixed(2)}</td></tr>`;
         }
 
-        const taxRate = document.getElementById('taxRate').value || 0;
+        const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
         const taxTotal = subtotal * (taxRate / 100);
         const grandTotal = subtotal + taxTotal;
 
@@ -153,8 +157,18 @@
 
     function downloadPDF() {
         const element = document.getElementById('print-area');
-        const opt = { margin: 10, filename: 'Business_Invoice.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-        html2pdf().set(opt).from(element).save();
+        const opt = {
+            margin:       10,
+            filename:     'Mian_Chicken_Shop_Bill.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, logging: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // This helps ensure everything is rendered before saving
+        html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+            window.scrollTo(0,0);
+        }).save();
     }
 </script>
 </body>

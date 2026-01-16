@@ -3,173 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Business Invoice Generator</title>
+    <title>Mian Chicken Shop - Invoice</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary-color: #2c3e50; --secondary-color: #27ae60; }
-        body { font-family: 'Arial', sans-serif; background: #f4f4f4; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-        .form-section { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-        .input-group { margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .item-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        button { cursor: pointer; border: none; border-radius: 4px; padding: 10px; font-weight: bold; }
-        .add-btn { background: var(--secondary-color); color: white; }
-        .gen-btn { background: var(--primary-color); color: white; width: 100%; font-size: 18px; margin-top: 20px; }
+        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .input-box { margin-bottom: 10px; width: 100%; padding: 8px; border: 1px solid #ccc; }
+        button { background: #27ae60; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 5px; }
         
-        /* Invoice Design for PDF */
-        #invoice-preview { display: none; margin-top: 30px; border: 1px solid #ddd; padding: 20px; background: #fff; }
-        #print-area { padding: 20px; background: white; color: black !important; }
-        .invoice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo-preview { max-width: 120px; height: auto; }
+        /* Invoice Area */
+        #print-area { padding: 30px; border: 1px solid #000; display: none; margin-top: 20px; background: white; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .logo-img { max-width: 100px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        table th, table td { border: 1px solid #eee; padding: 12px; text-align: left; color: black; }
-        .totals { text-align: right; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 style="text-align:center;">Business Invoice Generator</h2>
+<div class="container" id="form-div">
+    <h2 style="text-align:center;">Mian Chicken Shop Invoice</h2>
+    <input type="file" id="logo" accept="image/*" class="input-box" onchange="loadImg(event)">
+    <input type="text" id="cName" placeholder="Customer Name" class="input-box">
+    <input type="text" id="iName" placeholder="Item (e.g. Chicken)" class="input-box">
+    <input type="number" id="iQty" placeholder="Weight/Qty" class="input-box">
+    <input type="number" id="iPrice" placeholder="Price per kg" class="input-box">
     
-    <div class="form-section">
-        <div class="input-group">
-            <div>
-                <label>Upload Logo</label>
-                <input type="file" id="logoInput" accept="image/*" onchange="previewImage(event)">
-            </div>
-            <div>
-                <label>Business Name</label>
-                <input type="text" id="bizName" placeholder="Mian Chicken Shop">
-            </div>
-        </div>
-        <div class="input-group">
-            <input type="text" id="clientName" placeholder="Customer Name">
-            <input type="text" id="invoiceNumber" placeholder="Bill No.">
-        </div>
-    </div>
-
-    <div id="items-container">
-        <div class="item-row">
-            <input type="text" placeholder="Item Name" class="item-desc">
-            <input type="number" placeholder="Qty" class="item-qty">
-            <input type="number" placeholder="Price" class="item-price">
-        </div>
-    </div>
-    <button class="add-btn" onclick="addItem()">+ Add More</button>
-
-    <div class="input-group" style="margin-top:20px;">
-        <input type="number" id="taxRate" placeholder="Tax % (Optional)">
-    </div>
-
-    <button class="gen-btn" onclick="generateInvoice()">Generate Bill</button>
+    <button onclick="showInvoice()">Preview Bill</button>
 </div>
 
-<div id="invoice-preview">
-    <div id="print-area">
-        <div class="invoice-header">
-            <div id="logoContainer"></div>
-            <div style="text-align:right;">
-                <h2 id="outBizName" style="margin:0;"></h2>
-                <p style="margin:5px 0;">Date: <span id="outDate"></span></p>
-                <p style="margin:5px 0;">Bill #: <span id="outInvNum"></span></p>
-            </div>
-        </div>
-        <hr>
-        <p><strong>Bill To:</strong> <span id="outClient"></span></p>
-        
-        <table>
-            <thead>
-                <tr style="background:#f8f9fa;">
-                    <th>Description</th>
-                    <th>Qty</th>
-                    <th>Price</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="invoice-items-body"></tbody>
-        </table>
-
-        <div class="totals">
-            <p>Subtotal: <span id="outSubtotal"></span> PKR</p>
-            <p>Tax: <span id="outTax"></span> PKR</p>
-            <hr align="right" width="200">
-            <h3>Grand Total: <span id="outGrandTotal"></span> PKR</h3>
+<div id="print-area">
+    <div class="header">
+        <div id="logo-place"></div>
+        <div style="text-align:right">
+            <h2 id="b-name">Mian Chicken Shop</h2>
+            <p>Date: <span id="d-date"></span></p>
         </div>
     </div>
-    <button class="gen-btn" style="background:#e67e22;" onclick="downloadPDF()">Download PDF Now</button>
+    <hr>
+    <p><strong>Customer:</strong> <span id="c-out"></span></p>
+    <table>
+        <thead>
+            <tr style="background:#eee">
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="t-item"></td>
+                <td id="t-qty"></td>
+                <td id="t-price"></td>
+                <td id="t-total"></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3 style="text-align:right">Grand Total: <span id="g-total"></span> PKR</h3>
+</div>
+
+<div id="actions" style="display:none; max-width:600px; margin: 10px auto;">
+    <button onclick="download()">Download PDF</button>
+    <button style="background:#3498db" onclick="window.print()">Print directly (Backup)</button>
 </div>
 
 <script>
-    let logoData = "";
-
-    function previewImage(event) {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onload = function() { logoData = reader.result; }
-        reader.readAsDataURL(file);
+    let imgBase64 = "";
+    function loadImg(e) {
+        let reader = new FileReader();
+        reader.onload = function() { imgBase64 = reader.result; }
+        reader.readAsDataURL(e.target.files[0]);
     }
 
-    function addItem() {
-        const div = document.createElement('div');
-        div.className = 'item-row';
-        div.innerHTML = `<input type="text" placeholder="Item Name" class="item-desc">
-                         <input type="number" placeholder="Qty" class="item-qty">
-                         <input type="number" placeholder="Price" class="item-price">`;
-        document.getElementById('items-container').appendChild(div);
-    }
-
-    function generateInvoice() {
-        document.getElementById('outBizName').innerText = document.getElementById('bizName').value || "Mian Chicken Shop";
-        document.getElementById('outClient').innerText = document.getElementById('clientName').value || "Customer";
-        document.getElementById('outInvNum').innerText = document.getElementById('invoiceNumber').value || "001";
-        document.getElementById('outDate').innerText = new Date().toLocaleDateString();
-
-        const logoCont = document.getElementById('logoContainer');
-        logoCont.innerHTML = logoData ? `<img src="${logoData}" class="logo-preview">` : '';
-
-        const descs = document.getElementsByClassName('item-desc');
-        const qtys = document.getElementsByClassName('item-qty');
-        const prices = document.getElementsByClassName('item-price');
-        let subtotal = 0;
-        let html = "";
-
-        for(let i=0; i<descs.length; i++) {
-            let q = parseFloat(qtys[i].value) || 0;
-            let p = parseFloat(prices[i].value) || 0;
-            let lineTotal = q * p;
-            subtotal += lineTotal;
-            html += `<tr><td>${descs[i].value}</td><td>${q}</td><td>${p}</td><td>${lineTotal.toFixed(2)}</td></tr>`;
+    function showInvoice() {
+        document.getElementById('c-out').innerText = document.getElementById('cName').value;
+        document.getElementById('t-item').innerText = document.getElementById('iName').value;
+        document.getElementById('t-qty').innerText = document.getElementById('iQty').value;
+        document.getElementById('t-price').innerText = document.getElementById('iPrice').value;
+        let total = document.getElementById('iQty').value * document.getElementById('iPrice').value;
+        document.getElementById('t-total').innerText = total.toFixed(2);
+        document.getElementById('g-total').innerText = total.toFixed(2);
+        document.getElementById('d-date').innerText = new Date().toLocaleDateString();
+        
+        if(imgBase64) {
+            document.getElementById('logo-place').innerHTML = `<img src="${imgBase64}" class="logo-img">`;
         }
 
-        const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-        const taxTotal = subtotal * (taxRate / 100);
-        const grandTotal = subtotal + taxTotal;
-
-        document.getElementById('invoice-items-body').innerHTML = html;
-        document.getElementById('outSubtotal').innerText = subtotal.toFixed(2);
-        document.getElementById('outTax').innerText = taxTotal.toFixed(2);
-        document.getElementById('outGrandTotal').innerText = grandTotal.toFixed(2);
-        
-        document.getElementById('invoice-preview').style.display = 'block';
-        window.scrollTo(0, document.body.scrollHeight);
+        document.getElementById('print-area').style.display = 'block';
+        document.getElementById('actions').style.display = 'block';
     }
 
-    function downloadPDF() {
+    function download() {
         const element = document.getElementById('print-area');
-        const opt = {
-            margin:       10,
-            filename:     'Mian_Chicken_Shop_Bill.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        
-        // This helps ensure everything is rendered before saving
-        html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
-            window.scrollTo(0,0);
-        }).save();
+        html2pdf().from(element).save('Bill.pdf');
     }
 </script>
+
 </body>
 </html>

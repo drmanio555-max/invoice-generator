@@ -3,69 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mian Chicken Shop - Invoice</title>
+    <title>Mian Chicken Shop - Professional Invoice</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .input-box { margin-bottom: 10px; width: 100%; padding: 8px; border: 1px solid #ccc; }
-        button { background: #27ae60; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 5px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #e9ecef; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .input-box { margin-bottom: 12px; width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; }
+        button { border: none; padding: 12px; cursor: pointer; width: 100%; font-weight: bold; border-radius: 6px; transition: 0.3s; margin-bottom: 8px; }
+        .btn-preview { background: #2c3e50; color: white; }
+        .btn-download { background: #27ae60; color: white; }
+        .btn-print { background: #3498db; color: white; }
+
+        /* Professional Invoice Styling */
+        #print-area { 
+            display: none; 
+            padding: 40px; 
+            border: 2px solid #333; 
+            background: white; 
+            color: #000;
+            margin-top: 20px;
+        }
+        .invoice-header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .invoice-header h1 { margin: 0; color: #d35400; font-size: 28px; text-transform: uppercase; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
         
-        /* Invoice Area */
-        #print-area { padding: 30px; border: 1px solid #000; display: none; margin-top: 20px; background: white; }
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .logo-img { max-width: 100px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        table th { background: #34495e; color: white; padding: 12px; border: 1px solid #333; }
+        table td { padding: 12px; border: 1px solid #333; text-align: center; }
+        
+        .total-section { text-align: right; margin-top: 20px; padding-top: 10px; }
+        .total-section h2 { margin: 0; color: #000; border-bottom: 2px double #333; display: inline-block; padding-bottom: 5px; }
+        
+        .footer { margin-top: 50px; display: flex; justify-content: space-between; }
+        .signature { border-top: 1px solid #000; width: 150px; text-align: center; padding-top: 5px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div class="container" id="form-div">
-    <h2 style="text-align:center;">Mian Chicken Shop Invoice</h2>
+<div class="container" id="setup-form">
+    <h2 style="text-align:center; color: #2c3e50;">Mian Chicken Shop Bill Maker</h2>
+    <label>Business Logo (Optional):</label>
     <input type="file" id="logo" accept="image/*" class="input-box" onchange="loadImg(event)">
     <input type="text" id="cName" placeholder="Customer Name" class="input-box">
-    <input type="text" id="iName" placeholder="Item (e.g. Chicken)" class="input-box">
-    <input type="number" id="iQty" placeholder="Weight/Qty" class="input-box">
-    <input type="number" id="iPrice" placeholder="Price per kg" class="input-box">
+    <input type="text" id="iName" placeholder="Item Name (e.g. Fresh Chicken)" class="input-box">
+    <input type="number" id="iQty" placeholder="Weight/Qty (KG)" class="input-box">
+    <input type="number" id="iPrice" placeholder="Price per Unit" class="input-box">
     
-    <button onclick="showInvoice()">Preview Bill</button>
+    <button class="btn-preview" onclick="showInvoice()">1. Create Professional Bill</button>
 </div>
 
 <div id="print-area">
-    <div class="header">
+    <div class="invoice-header">
         <div id="logo-place"></div>
-        <div style="text-align:right">
-            <h2 id="b-name">Mian Chicken Shop</h2>
-            <p>Date: <span id="d-date"></span></p>
-        </div>
+        <h1>Mian Chicken Shop</h1>
+        <p>Quality Meat & Fresh Chicken Service</p>
     </div>
-    <hr>
-    <p><strong>Customer:</strong> <span id="c-out"></span></p>
+
+    <div class="info-row">
+        <span><strong>Bill To:</strong> <span id="c-out"></span></span>
+        <span><strong>Date:</strong> <span id="d-date"></span></span>
+    </div>
+
     <table>
         <thead>
-            <tr style="background:#eee">
-                <th>Item</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Total</th>
+            <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Rate (PKR)</th>
+                <th>Total (PKR)</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td id="t-item"></td>
+                <td id="t-item" style="text-align: left;"></td>
                 <td id="t-qty"></td>
                 <td id="t-price"></td>
-                <td id="t-total"></td>
+                <td id="t-total" style="font-weight: bold;"></td>
             </tr>
         </tbody>
     </table>
-    <h3 style="text-align:right">Grand Total: <span id="g-total"></span> PKR</h3>
+
+    <div class="total-section">
+        <p style="margin:0;">Sub Total: <span id="s-total"></span></p>
+        <h2>Grand Total: <span id="g-total"></span> PKR</h2>
+    </div>
+
+    <div class="footer">
+        <div class="signature">Customer Signature</div>
+        <div class="signature">Authorized Signature</div>
+    </div>
+    <p style="text-align:center; font-size: 10px; margin-top: 30px;">Thank you for your business! Visit again.</p>
 </div>
 
-<div id="actions" style="display:none; max-width:600px; margin: 10px auto;">
-    <button onclick="download()">Download PDF</button>
-    <button style="background:#3498db" onclick="window.print()">Print directly (Backup)</button>
+<div id="actions" style="display:none; max-width:600px; margin: 20px auto; text-align: center;">
+    <button class="btn-download" onclick="download()">Download PDF Invoice</button>
+    <button class="btn-print" onclick="window.print()">Print Receipt</button>
 </div>
 
 <script>
@@ -77,26 +109,38 @@
     }
 
     function showInvoice() {
-        document.getElementById('c-out').innerText = document.getElementById('cName').value;
-        document.getElementById('t-item').innerText = document.getElementById('iName').value;
-        document.getElementById('t-qty').innerText = document.getElementById('iQty').value;
-        document.getElementById('t-price').innerText = document.getElementById('iPrice').value;
-        let total = document.getElementById('iQty').value * document.getElementById('iPrice').value;
-        document.getElementById('t-total').innerText = total.toFixed(2);
-        document.getElementById('g-total').innerText = total.toFixed(2);
+        // Data Fill
+        document.getElementById('c-out').innerText = document.getElementById('cName').value || "Valued Customer";
+        document.getElementById('t-item').innerText = document.getElementById('iName').value || "Chicken";
+        document.getElementById('t-qty').innerText = document.getElementById('iQty').value || "0";
+        document.getElementById('t-price').innerText = document.getElementById('iPrice').value || "0";
+        
+        let total = (parseFloat(document.getElementById('iQty').value) || 0) * (parseFloat(document.getElementById('iPrice').value) || 0);
+        document.getElementById('t-total').innerText = total.toLocaleString();
+        document.getElementById('s-total').innerText = total.toLocaleString();
+        document.getElementById('g-total').innerText = total.toLocaleString();
         document.getElementById('d-date').innerText = new Date().toLocaleDateString();
         
         if(imgBase64) {
-            document.getElementById('logo-place').innerHTML = `<img src="${imgBase64}" class="logo-img">`;
+            document.getElementById('logo-place').innerHTML = `<img src="${imgBase64}" style="max-width: 80px; margin-bottom:10px;">`;
         }
 
+        // UI Toggle
         document.getElementById('print-area').style.display = 'block';
         document.getElementById('actions').style.display = 'block';
+        window.scrollTo(0, document.body.scrollHeight);
     }
 
     function download() {
         const element = document.getElementById('print-area');
-        html2pdf().from(element).save('Bill.pdf');
+        const opt = {
+            margin:       [10, 10],
+            filename:     'Mian_Chicken_Invoice.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
     }
 </script>
 

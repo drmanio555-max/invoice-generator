@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Business Invoice Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --primary-color: #2c3e50; --secondary-color: #27ae60; }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; direction: ltr; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .form-section { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .item-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        button { cursor: pointer; border: none; border-radius: 4px; padding: 10px; font-weight: bold; }
+        .add-btn { background: var(--secondary-color); color: white; }
+        .gen-btn { background: var(--primary-color); color: white; width: 100%; font-size: 18px; margin-top: 20px; }
+        
+        /* Invoice Design */
+        #invoice-preview { display: none; margin-top: 30px; border: 1px solid #ddd; padding: 40px; background: #fff; }
+        .invoice-header { display: flex; justify-content: space-between; align-items: center; }
+        .logo-preview { max-width: 150px; max-height: 100px; object-fit: contain; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table th, table td { border: 1px solid #eee; padding: 12px; text-align: left; }
+        .totals { text-align: right; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align:center;">Business Invoice Generator</h2>
+    
+    <div class="form-section">
+        <div class="input-group">
+            <div>
+                <label>Business Logo</label>
+                <input type="file" id="logoInput" accept="image/*" onchange="previewImage(event)">
+            </div>
+            <div>
+                <label>Business Name</label>
+                <input type="text" id="bizName" placeholder="Your Business Name">
+            </div>
+        </div>
+        <div class="input-group">
+            <input type="text" id="clientName" placeholder="Client Name">
+            <input type="text" id="invoiceNumber" placeholder="Invoice # (e.g. 001)">
+        </div>
+    </div>
+
+    <div id="items-container">
+        <label>Items</label>
+        <div class="item-row">
+            <input type="text" placeholder="Description" class="item-desc">
+            <input type="number" placeholder="Qty" class="item-qty">
+            <input type="number" placeholder="Price" class="item-price">
+        </div>
+    </div>
+    <button class="add-btn" onclick="addItem()">+ Add More Item</button>
+
+    <div class="input-group" style="margin-top:20px;">
+        <input type="number" id="taxRate" placeholder="Tax % (Optional)">
+    </div>
+
+    <button class="gen-btn" onclick="generateInvoice()">Generate & Preview</button>
+</div>
+
+<div id="invoice-preview">
+    <div id="print-area">
+        <div class="invoice-header">
+            <div id="logoContainer"></div>
+            <div style="text-align:right;">
+                <h1 id="outBizName"></h1>
+                <p>Date: <span id="outDate"></span></p>
+                <p>Invoice #: <span id="outInvNum"></span></p>
+            </div>
+        </div>
+        <hr>
+        <p><strong>Bill To:</strong> <span id="outClient"></span></p>
+        
+        <table>
+            <thead>
+                <tr style="background:#f8f9fa;">
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="invoice-items-body"></tbody>
+        </table>
+
+        <div class="totals">
+            <p>Subtotal: <span id="outSubtotal"></span></p>
+            <p>Tax: <span id="outTax"></span></p>
+            <h3>Grand Total: <span id="outGrandTotal"></span></h3>
+        </div>
+    </div>
+    <button class="gen-btn" style="background:#e67e22;" onclick="downloadPDF()">Download PDF</button>
+</div>
+
+<script>
+    let logoData = "";
+
+    function previewImage(event) {
+        const reader = new FileReader();
+        reader.onload = function() { logoData = reader.result; }
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function addItem() {
+        const div = document.createElement('div');
+        div.className = 'item-row';
+        div.innerHTML = `<input type="text" placeholder="Description" class="item-desc">
+                         <input type="number" placeholder="Qty" class="item-qty">
+                         <input type="number" placeholder="Price" class="item-price">`;
+        document.getElementById('items-container').appendChild(div);
+    }
+
+    function generateInvoice() {
+        document.getElementById('outBizName').innerText = document.getElementById('bizName').value;
+        document.getElementById('outClient').innerText = document.getElementById('clientName').value;
+        document.getElementById('outInvNum').innerText = document.getElementById('invoiceNumber').value;
+        document.getElementById('outDate').innerText = new Date().toLocaleDateString();
+
+        const logoCont = document.getElementById('logoContainer');
+        logoCont.innerHTML = logoData ? `<img src="${logoData}" class="logo-preview">` : '';
+
+        const descs = document.getElementsByClassName('item-desc');
+        const qtys = document.getElementsByClassName('item-qty');
+        const prices = document.getElementsByClassName('item-price');
+        let subtotal = 0;
+        let html = "";
+
+        for(let i=0; i<descs.length; i++) {
+            let lineTotal = qtys[i].value * prices[i].value;
+            subtotal += lineTotal;
+            html += `<tr><td>${descs[i].value}</td><td>${qtys[i].value}</td><td>${prices[i].value}</td><td>${lineTotal.toFixed(2)}</td></tr>`;
+        }
+
+        const taxRate = document.getElementById('taxRate').value || 0;
+        const taxTotal = subtotal * (taxRate / 100);
+        const grandTotal = subtotal + taxTotal;
+
+        document.getElementById('invoice-items-body').innerHTML = html;
+        document.getElementById('outSubtotal').innerText = subtotal.toFixed(2);
+        document.getElementById('outTax').innerText = taxTotal.toFixed(2);
+        document.getElementById('outGrandTotal').innerText = grandTotal.toFixed(2);
+        
+        document.getElementById('invoice-preview').style.display = 'block';
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function downloadPDF() {
+        const element = document.getElementById('print-area');
+        const opt = { margin: 10, filename: 'Business_Invoice.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
+</body>
+</html>
